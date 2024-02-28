@@ -1,0 +1,117 @@
+version: "3.4"
+services:
+  videos-web:
+    container_name: videos-web
+    image: aimvector/jaeger-tracing:videos-web-1.0.0
+    build:
+      context: ./applications-go/videos-web
+    ports:
+      - 3080:80
+    networks:
+      - tracing
+  playlists-api:
+    container_name: playlists-api
+    image: aimvector/jaeger-tracing:playlists-api-1.0.0
+    build:
+      context: ./applications-go/playlists-api
+    environment:
+      - "ENVIRONMENT=DEBUG"
+      - "REDIS_HOST=playlists-db"
+      - "REDIS_PORT=6379"
+      - "JAEGER_HOST_PORT=jaeger:6831"
+    ports:
+      - 81:10010
+    networks:
+      - tracing
+  # *****************Removed below code because not used anymore.*****************
+  # playlists-db:
+  #   container_name: playlists-db
+  #   image: redis:6.0-alpine
+  #   volumes:
+  #     - ./applications-go/playlists-db/appendonly.aof:/tmp/appendonly.aof
+  #   command: redis-server --dir /tmp/ --appendonly yes
+  #   networks:
+  #   - tracing
+  playlists-db:
+    container_name: playlists-db
+    image: mongo:latest
+    restart: always
+    ports:
+      - 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: test
+    volumes:
+      - ./applications-go/playlists-db/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - tracing
+  videos-api:
+    container_name: videos-api
+    image: aimvector/jaeger-tracing:videos-api-1.0.0
+    build:
+      context: ./applications-go/videos-api
+    environment:
+      - "ENVIRONMENT=DEBUG"
+      - "REDIS_HOST=videos-db"
+      - "REDIS_PORT=6379"
+      - "JAEGER_HOST_PORT=jaeger:6831"
+      #- "DELAY=true"
+      #- "FLAKY=true"
+    ports:
+      - 82:10010
+    networks:
+      - tracing
+  # videos-api-netcore:
+  #   container_name: videos-api
+  #   image: aimvector/jaeger-tracing:videos-api-netcore-1.0.0
+  #   build:
+  #     context: ./applications-go/videos-api-netcore
+  #   environment:
+  #   - "ENVIRONMENT=DEBUG"
+  #   - "REDIS_HOST=videos-db"
+  #   - "REDIS_PORT=6379"
+  #   - "JAEGER_AGENT_HOST=jaeger"
+  #   - "JAEGER_AGENT_PORT=6831"
+  #   - "JAEGER_SERVICE_NAME=videos-api"
+  #   - "JAEGER_REPORTER_LOG_SPANS=true"
+  #   - "JAEGER_SAMPLER_TYPE=const"
+  #   - "JAEGER_PROPAGATION=jaeger"
+  #   ports:
+  #   - 82:5000
+  #   networks:
+  #   - tracing
+  # *****************Removed below code because not used anymore.*****************
+  # videos-db:
+  #   container_name: videos-db
+  #   image: redis:6.0-alpine
+  #   command: [ "redis-server" , "--dir", "/tmp", "--appendonly", "yes"]
+  #   volumes:
+  #     - ./applications-go/videos-db/appendonly.aof:/tmp/appendonly.aof
+  #   networks:
+  #   - tracing
+  videos-db:
+    container_name: videos-db
+    image: mongo:latest
+    restart: always
+    ports:
+      - 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: test
+    volumes:
+      - ./applications-go/videos-db/init.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - tracing
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    networks:
+      - tracing
+    ports:
+      - 16686:16686
+      - 14269:14269
+networks:
+  tracing:
+    name: tracing
