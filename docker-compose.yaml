@@ -15,10 +15,12 @@ services:
     build:
       context: ./applications-go/playlists-api
     environment:
-      - "ENVIRONMENT=DEBUG"
-      - "REDIS_HOST=playlists-db"
-      - "REDIS_PORT=6379"
-      - "JAEGER_HOST_PORT=jaeger:6831"
+      ENVIRONMENT: DEBUG
+      MONGO_HOST: playlists-db
+      MONGO_PORT: 27017
+      MONGO_USER: root
+      MONGO_PASSWORD: password
+      JAEGER_HOST_PORT: jaeger:6831
     ports:
       - 81:10010
     networks:
@@ -52,12 +54,14 @@ services:
     build:
       context: ./applications-go/videos-api
     environment:
-      - "ENVIRONMENT=DEBUG"
-      - "REDIS_HOST=videos-db"
-      - "REDIS_PORT=6379"
-      - "JAEGER_HOST_PORT=jaeger:6831"
-      #- "DELAY=true"
-      #- "FLAKY=true"
+      ENVIRONMENT: DEBUG
+      MONGO_HOST: videos-db
+      MONGO_PORT: 27017
+      MONGO_USER: root
+      MONGO_PASSWORD: password
+      JAEGER_HOST_PORT: jaeger:6831
+      # DELAY: true
+      # FLAKY: true
     ports:
       - 82:10010
     networks:

@@ -9,28 +9,30 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/julienschmidt/httprouter"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	log "github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const serviceName = "playlists-api"
 
 var environment = os.Getenv("ENVIRONMENT")
-var redis_host = os.Getenv("REDIS_HOST")
-var redis_port = os.Getenv("REDIS_PORT")
 var jaeger_host_port = os.Getenv("JAEGER_HOST_PORT")
 
 var ctx = context.Background()
-var rdb *redis.Client
+var mongo_host = os.Getenv("MONGO_HOST")
+var mongo_port = os.Getenv("MONGO_PORT")
+var mongo_user = os.Getenv("MONGO_USER")
+var mongo_password = os.Getenv("MONGO_PASSWORD")
+var mongoUri = "mongodb://" + mongo_user + ":" + mongo_password + "@" + mongo_host + ":" + mongo_port
 
 func main() {
-
 	cfg := &config.Configuration{
 		ServiceName: serviceName,
 
@@ -69,23 +71,16 @@ func main() {
 		cors(w)
 
 		ctx := opentracing.ContextWithSpan(ctx, span)
-		playlistsJson := getPlaylists(ctx)
-
-		playlists := []playlist{}
-		err := json.Unmarshal([]byte(playlistsJson), &playlists)
-		if err != nil {
-			panic(err)
-		}
-
+		playlists := getPlaylists(ctx)
 		//get videos for each playlist from videos api
 		for pi := range playlists {
 
-			vs := []videos{}
+			vs := []video{}
 			for vi := range playlists[pi].Videos {
 
 				span, _ := opentracing.StartSpanFromContext(ctx, "playlists-api: videos-api GET /id")
 
-				v := videos{}
+				v := video{}
 
 				req, err := http.NewRequest("GET", "http://videos-api:10010/"+playlists[pi].Videos[vi].Id, nil)
 				if err != nil {
@@ -139,44 +134,51 @@ func main() {
 
 	})
 
-	r := redis.NewClient(&redis.Options{
-		Addr: redis_host + ":" + redis_port,
-		DB:   0,
-	})
-	rdb = r
-
 	fmt.Println("Running...")
 	log.Fatal(http.ListenAndServe(":10010", router))
 }
 
-func getPlaylists(ctx context.Context) (response string) {
+func getPlaylists(ctx context.Context) (playlists []playlist) {
 
-	span, _ := opentracing.StartSpanFromContext(ctx, "playlists-api: redis-get")
+	span, _ := opentracing.StartSpanFromContext(ctx, "playlists-api: mongo-get")
 	defer span.Finish()
-	playlistData, err := rdb.Get(ctx, "playlists").Result()
 
+	mongoClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri))
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("error occured retrieving playlists from Redis")
-		span.SetTag("error", true)
-		return "[]"
+		panic(err)
 	}
 
-	return playlistData
+	defer func() {
+		if err := mongoClient.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+
+	coll := mongoClient.Database("test").Collection("data")
+	cursor, err := coll.Find(ctx, bson.D{}, options.Find())
+	if err != nil {
+		panic(err)
+	}
+
+	if err = cursor.All(context.TODO(), &playlists); err != nil {
+		panic(err)
+	}
+
+	return playlists
 }
 
 type playlist struct {
-	Id     string   `json:"id"`
-	Name   string   `json:"name"`
-	Videos []videos `json:"videos"`
+	Id     string  `bson:"id" json:"id"`
+	Name   string  `bson:"name" json:"name"`
+	Videos []video `bson:"videos" json:"videos"`
 }
 
-type videos struct {
-	Id          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Imageurl    string `json:"imageurl"`
-	Url         string `json:"url"`
+type video struct {
+	Id          string `json:"id" bson:"id"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+	Imageurl    string `json:"imageurl" bson:"imageurl"`
+	Url         string `json:"url" bson:"url"`
 }
 
 type stop struct {

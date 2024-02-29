@@ -1,20 +1,25 @@
 package main
 
 import (
-	"net/http"
-	"github.com/julienschmidt/httprouter"
-	log "github.com/sirupsen/logrus"
-	"github.com/go-redis/redis/v8"
-	"fmt"
 	"context"
-	"time"
-	"strings"
-	"os"
+	"encoding/json"
+	"fmt"
 	"math/rand"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/julienschmidt/httprouter"
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	log "github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
-	"github.com/opentracing/opentracing-go/ext"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //TODO : https://opentracing.io/guides/golang/quick-start/
@@ -23,18 +28,19 @@ import (
 const serviceName = "videos-api"
 
 var environment = os.Getenv("ENVIRONMENT")
-var redis_host = os.Getenv("REDIS_HOST")
-var redis_port = os.Getenv("REDIS_PORT")
 var jaeger_host_port = os.Getenv("JAEGER_HOST_PORT")
 var flaky = os.Getenv("FLAKY")
 var delay = os.Getenv("DELAY")
+var mongo_host = os.Getenv("MONGO_HOST")
+var mongo_port = os.Getenv("MONGO_PORT")
+var mongo_user = os.Getenv("MONGO_USER")
+var mongo_password = os.Getenv("MONGO_PASSWORD")
+var mongoUri = "mongodb://" + mongo_user + ":" + mongo_password + "@" + mongo_host + ":" + mongo_port
 
 var ctx = context.Background()
-var rdb *redis.Client
 
 func main() {
-	
-  cfg := &config.Configuration{
+	cfg := &config.Configuration{
 		ServiceName: serviceName,
 
 		// "const" sampler is a binary sampling strategy: 0=never sample, 1=always sample.
@@ -45,7 +51,7 @@ func main() {
 
 		// Log the emitted spans to stdout.
 		Reporter: &config.ReporterConfig{
-			LogSpans: true,
+			LogSpans:           true,
 			LocalAgentHostPort: jaeger_host_port,
 		},
 	}
@@ -56,11 +62,11 @@ func main() {
 	}
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
-	
+
 	router := httprouter.New()
 
-	router.GET("/:id", func(w http.ResponseWriter, r *http.Request, p httprouter.Params){
-		
+	router.GET("/:id", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+
 		spanCtx, _ := tracer.Extract(
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(r.Header),
@@ -72,69 +78,78 @@ func main() {
 		if flaky == "true" {
 			if rand.Intn(90) < 30 {
 				panic("flaky error occurred ")
-		  } 
+			}
 		}
-		
-		ctx := opentracing.ContextWithSpan(context.Background(), span)
-		video := video(w,r,p, ctx)
 
-		if strings.Contains(video, "jM36M39MA3I") && delay == "true" {
-					time.Sleep(6 * time.Second)
+		ctx := opentracing.ContextWithSpan(ctx, span)
+		videos := getVideo(w, r, p, ctx)
+
+		if strings.Contains(videos[0].Id, "jM36M39MA3I") && delay == "true" {
+			time.Sleep(6 * time.Second)
+		}
+
+		jsonData, err := json.Marshal(videos[0])
+		if err != nil {
+			panic(err)
 		}
 
 		cors(w)
-		fmt.Fprintf(w, "%s", video)
-	 
+		fmt.Fprintf(w, "%s", string(jsonData))
 	})
-
-	r := redis.NewClient(&redis.Options{
-		Addr:     redis_host + ":" + redis_port,
-		DB:       0,
-	})
-	rdb = r
 
 	fmt.Println("Running...")
 	log.Fatal(http.ListenAndServe(":10010", router))
 }
 
-func video(writer http.ResponseWriter, request *http.Request, p httprouter.Params, ctx context.Context)(response string){
-	
-	span, _ := opentracing.StartSpanFromContext(ctx, "videos-api: redis-get")
+func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Params, ctx context.Context) (videos []video) {
+
+	span, _ := opentracing.StartSpanFromContext(ctx, "videos-api: mongo-get")
 	defer span.Finish()
 	id := p.ByName("id")
-	
-	videoData, err := rdb.Get(ctx, id).Result()
-	if err == redis.Nil {
 
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := mongoClient.Disconnect(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	coll := mongoClient.Database("test").Collection("data")
+	cursor, err := coll.Find(ctx, bson.D{{"id", id}}, options.Find())
+	if err == mongo.ErrNoDocuments {
 		span.Tracer().Inject(
 			span.Context(),
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(request.Header),
 		)
-		
-		return "{}"
-		
-		
+		return
 	} else if err != nil {
 		panic(err)
+	}
+
+	if err = cursor.All(ctx, &videos); err != nil {
+		panic(err)
 	} else {
-	  
 		span.Tracer().Inject(
 			span.Context(),
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(request.Header),
 		)
-
-		return videoData
 	}
+
+	return videos
 }
 
 type stop struct {
 	error
 }
 
-func cors(writer http.ResponseWriter) () {
-	if(environment == "DEBUG"){
+func cors(writer http.ResponseWriter) {
+	if environment == "DEBUG" {
 		writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-MY-API-Version")
 		writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -142,11 +157,10 @@ func cors(writer http.ResponseWriter) () {
 	}
 }
 
-type videos struct {
-	Id string `json:"id"`
-	Title string `json:"title"`
-	Description string `json:"description"`
-	Imageurl string `json:"imageurl"`
-	Url string `json:"url"`
-
+type video struct {
+	Id          string `json:"id" bson:"id"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+	Imageurl    string `json:"imageurl" bson:"imageurl"`
+	Url         string `json:"url" bson:"url"`
 }
