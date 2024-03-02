@@ -143,13 +143,13 @@ func getPlaylists(ctx context.Context) (playlists []playlist) {
 	span, _ := opentracing.StartSpanFromContext(ctx, "playlists-api: mongo-get")
 	defer span.Finish()
 
-	mongoClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri))
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
 	if err != nil {
 		panic(err)
 	}
 
 	defer func() {
-		if err := mongoClient.Disconnect(context.TODO()); err != nil {
+		if err := mongoClient.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
@@ -160,7 +160,7 @@ func getPlaylists(ctx context.Context) (playlists []playlist) {
 		panic(err)
 	}
 
-	if err = cursor.All(context.TODO(), &playlists); err != nil {
+	if err = cursor.All(ctx, &playlists); err != nil {
 		panic(err)
 	}
 
