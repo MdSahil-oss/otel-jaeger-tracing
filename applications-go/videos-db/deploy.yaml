@@ -14,34 +14,38 @@ spec:
       labels:
         app: videos-db
     spec:
-      initContainers:
-      - name: data
-        image: busybox
-        command: [ "sh", "-c" ]
-        args:
-          - |
-            cp /config/appendonly.aof /tmp/appendonly.aof
-        volumeMounts:
-        - name: data
-          mountPath: /tmp/
-        - name: config
-          mountPath: /config/
+      # initContainers:
+      #   - name: data
+      #     image: busybox
+      #     command: ["sh", "-c"]
+      #     args:
+      #       - |
+      #         cp /config/appendonly.aof /tmp/appendonly.aof
+      #     volumeMounts:
+      #       - name: data
+      #         mountPath: /tmp/
+      #       - name: config
+      #         mountPath: /config/
       containers:
-      - name: videos-db
-        image: redis:6.0-alpine
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: data
-          mountPath: /tmp/
-        command: [ "redis-server"]
-        args: ["--dir", "/tmp", "--appendonly", "yes"]
+        - name: videos-db
+          image: redis:6.0-alpine
+          ports:
+            - containerPort: 27017
+          resources:
+            limits:
+              cpu: "256Mi"
+              memory: "500m"
+          volumeMounts:
+            - name: configmap
+              subPath: data.json
+              mountPath: /docker-entrypoint-initdb.d/
+            - name: configmap
+              subPath: init.js
+              mountPath: /docker-entrypoint-initdb.d/
       volumes:
-      - name: data
-        emptyDir: {}
-      - name: config
-        configMap:
-          name: videos-db
+        - name: configmap
+          configMap:
+            name: videos-db
 ---
 apiVersion: v1
 kind: Service
@@ -55,5 +59,5 @@ spec:
     app: videos-db
   ports:
     - protocol: TCP
-      port: 6379
-      targetPort: 6379
+      port: 27017
+      targetPort: 27017

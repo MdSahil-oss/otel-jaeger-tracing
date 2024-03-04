@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: videos-db
+  labels:
+    app: videos-db
+spec:
+  selector:
+    matchLabels:
+      app: videos-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: videos-db
+    spec:
+      # initContainers:
+      #   - name: data
+      #     image: busybox
+      #     command: ["sh", "-c"]
+      #     args:
+      #       - |
+      #         cp /config/appendonly.aof /tmp/appendonly.aof
+      #     volumeMounts:
+      #       - name: data
+      #         mountPath: /tmp/
+      #       - name: config
+      #         mountPath: /config/
+      containers:
+        - name: videos-db
+          image: redis:6.0-alpine
+          ports:
+            - containerPort: 27017
+          resources:
+            limits:
+              cpu: "256Mi"
+              memory: "500m"
+          volumeMounts:
+            - name: configmap
+              subPath: data.json
+              mountPath: /docker-entrypoint-initdb.d/
+            - name: configmap
+              subPath: init.js
+              mountPath: /docker-entrypoint-initdb.d/
+      volumes:
+        - name: configmap
+          configMap:
+            name: videos-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: videos-db
+  labels:
+    app: videos-db
+spec:
+  type: ClusterIP
+  selector:
+    app: videos-db
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017

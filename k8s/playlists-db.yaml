@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playlists-db
+  labels:
+    app: playlists-db
+spec:
+  selector:
+    matchLabels:
+      app: playlists-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: playlists-db
+    spec:
+      # initContainers:
+      #   - name: data
+      #     image: busybox
+      #     command: ["sh", "-c"]
+      #     args:
+      #       - |
+      #         cp /config/appendonly.aof /tmp/appendonly.aof
+      #     volumeMounts:
+      #       - name: configmap
+      #         subPath: data.json
+      #         mountPath: /docker-entrypoint-initdb.d/
+      #       - name: configmap
+      #         subPath: init.js
+      #         mountPath: /docker-entrypoint-initdb.d/
+      containers:
+        - name: playlists-db
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+          resources:
+            limits:
+              cpu: "256Mi"
+              memory: "500m"
+          volumeMounts:
+            - name: configmap
+              subPath: data.json
+              mountPath: /docker-entrypoint-initdb.d/
+            - name: configmap
+              subPath: init.js
+              mountPath: /docker-entrypoint-initdb.d/
+      volumes:
+        - name: configmap
+          configMap:
+            name: playlists-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: playlists-db
+  labels:
+    app: playlists-db
+spec:
+  type: ClusterIP
+  selector:
+    app: playlists-db
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
