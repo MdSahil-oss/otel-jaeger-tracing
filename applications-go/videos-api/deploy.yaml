@@ -20,20 +20,34 @@ spec:
         app: videos-api
     spec:
       containers:
-      - name: videos-api
-        image: aimvector/jaeger-tracing:videos-api-1.0.0
-        imagePullPolicy : Always
-        ports:
-        - containerPort: 10010
-        env:
-        - name: "ENVIRONMENT"
-          value: "DEBUG"
-        - name: "REDIS_HOST"
-          value: "videos-db"
-        - name: "REDIS_PORT"
-          value: "6379"
-        - name: "FLAKY"
-          value: "false"
+        - name: videos-api
+          image: aimvector/jaeger-tracing:videos-api-1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 10010
+          resources:
+            limits:
+              cpu: "128Mi"
+              memory: "250m"
+          env:
+            - name: "ENVIRONMENT"
+              value: "DEBUG"
+            - name: "MONGO_HOST"
+              value: "videos-db"
+            - name: "MONGO_PORT"
+              value: "27017"
+            - name: "MONGO_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: user
+            - name: "MONGO_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: password
+            - name: "JAEGER_HOST_PORT"
+              value: "jaeger:6831"
 ---
 apiVersion: v1
 kind: Service
@@ -51,5 +65,4 @@ spec:
       port: 10010
       targetPort: 10010
 ---
-
 
