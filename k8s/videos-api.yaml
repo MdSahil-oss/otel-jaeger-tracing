@@ -21,14 +21,14 @@ spec:
     spec:
       containers:
         - name: videos-api
-          image: aimvector/jaeger-tracing:videos-api-1.0.0
+          image: mdsahiloss/jaeger-tracing:videos-api-1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 10010
           resources:
             limits:
-              cpu: "128Mi"
-              memory: "250m"
+              cpu: "250m"
+              memory: "128Mi"
           env:
             - name: "ENVIRONMENT"
               value: "DEBUG"

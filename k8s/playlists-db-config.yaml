@@ -3,8 +3,10 @@ kind: ConfigMap
 metadata:
   name: playlists-db
 data:
-  data.json: |
-    [
+  init.js: |
+    db = connect("localhost:27017", "root", "password");
+
+    db.data.insertMany([
       {
         "id": "1",
         "name": "CI/CD",
@@ -25,10 +27,4 @@ data:
         "name": "K8s Autoscaling",
         "videos": [{ "id": "jM36M39MA3I" }, { "id": "FfDI08sgrYY" }]
       }
-    ]
-  init.js: |
-    import data from './data.json' assert { type: 'json' };
-
-    db = connect("localhost:27017", "root", "password");
-
-    db.data.insertMany(data);
+    ]);

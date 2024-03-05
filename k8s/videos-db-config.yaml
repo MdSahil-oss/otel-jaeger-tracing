@@ -4,13 +4,9 @@ metadata:
   name: videos-db
 data:
   init.js: |
-    import data from './data.json' assert { type: 'json' };
-
     db = connect("localhost:27017", "root", "password");
 
-    db.data.insertMany(data);
-  data.json: |
-    [
+    db.data.insertMany([
       {
         "id": "jM36M39MA3I",
         "title": "Kubernetes cluster autoscaling",
@@ -74,4 +70,4 @@ data:
         "url": "https://youtu.be/eyvLwK5C2dw",
         "description": ""
       }
-    ]
+    ]);
