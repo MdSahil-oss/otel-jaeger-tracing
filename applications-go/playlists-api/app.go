@@ -72,6 +72,7 @@ func main() {
 
 		ctx := opentracing.ContextWithSpan(ctx, span)
 		playlists := getPlaylists(ctx)
+		fmt.Println("Playlists:", playlists)
 		//get videos for each playlist from videos api
 		for pi := range playlists {
 
