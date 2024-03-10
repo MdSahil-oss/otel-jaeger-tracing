@@ -75,7 +75,7 @@
     } else {
       playlistApiUrl = "http://" + location.hostname + "/api/playlists"
     }
-    playlistApiUrl = "http://playlists-api:80/";
+    playlistApiUrl = "http://playlists-api:10010/";
     var app = angular.module('videos', []);
     app.controller('videosController', function ($scope, $http) {
 
@@ -90,6 +90,15 @@
           $scope.playlist = response.data;
         });
     });
+
+    // fetch(playlistApiUrl, {
+    //   method: "GET"
+    // })
+    //   .then((response) => response.json())
+    //   .then((json) => console.log(json))
+    //   .catch(err => {
+    //     console.error("Found errors:", err);
+    //   });
 
   </script>
 </body>
