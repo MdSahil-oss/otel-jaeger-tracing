@@ -1,0 +1,67 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: tracing-mongodb
+  namespace: mongodb
+spec:
+  members: 2
+  type: ReplicaSet
+  version: latest
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: root
+      db: test
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: mongodb-password
+      roles:
+        - name: clusterAdmin
+          db: test
+        - name: userAdminAnyDatabase
+          db: test
+      scramCredentialsSecretName: mongodb-scram
+  # additionalMongodConfig:
+  #   storage.wiredTiger.engineConfig.journalCompressor: zlib
+  statefulSet:
+    spec:
+      # Name for the service object created by the operator
+      serviceName: mongodb-svc
+      selector:
+        {}
+        # Specifies a size for the data volume different from the default 10Gi
+      volumeClaimTemplates:
+        - metadata:
+            name: mongodb-volume
+          spec:
+            accessModes: ["ReadWriteOnce", "ReadWriteMany"]
+            resources:
+              requests:
+                storage: 10Gi
+
+      template:
+        # Adds a custom volume to the pods
+        spec:
+          volumes:
+            - name: playlist-configmap
+              configMap:
+                name: playlists-db
+            - name: videos-configmap
+              configMap:
+                name: videos-db
+          containers:
+            - name: mongodb-agent
+              volumeMounts:
+                - name: playlist-configmap
+                  mountPath: /docker-entrypoint-initdb.d/
+                - name: videos-configmap
+                  mountPath: /docker-entrypoint-initdb.d/
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-password
+  namespace: mongodb
+type: Opaque
+stringData:
+  password: cGFzc3dvcmQK

@@ -1,6 +1,6 @@
 db = connect("localhost:27017", "root", "password");
 
-db.data.insertMany([
+db.videos.insertMany([
     {
         "id": "jM36M39MA3I",
         "title": "Kubernetes cluster autoscaling",

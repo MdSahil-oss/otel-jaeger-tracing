@@ -31,6 +31,8 @@ var mongo_port = os.Getenv("MONGO_PORT")
 var mongo_user = os.Getenv("MONGO_USER")
 var mongo_password = os.Getenv("MONGO_PASSWORD")
 var mongoUri = "mongodb://" + mongo_user + ":" + mongo_password + "@" + mongo_host + ":" + mongo_port
+var mongo_db = "test"
+var mongo_collection = "playlists"
 
 func main() {
 	cfg := &config.Configuration{
@@ -155,7 +157,7 @@ func getPlaylists(ctx context.Context) (playlists []playlist) {
 		}
 	}()
 
-	coll := mongoClient.Database("test").Collection("data")
+	coll := mongoClient.Database(mongo_db).Collection(mongo_collection)
 	cursor, err := coll.Find(ctx, bson.D{}, options.Find())
 	if err != nil {
 		panic(err)

@@ -6,6 +6,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
   name: videos-web
+  namespace: tracing
 spec:
   rules:
     - host: tracing.demo

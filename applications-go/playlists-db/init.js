@@ -1,6 +1,6 @@
 db = connect("localhost:27017", "root", "password");
 
-db.data.insertMany([
+db.playlists.insertMany([
     {
         "id": "1",
         "name": "CI/CD",
