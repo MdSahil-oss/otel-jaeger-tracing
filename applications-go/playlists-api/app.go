@@ -8,7 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
+	vault "github.com/hashicorp/vault/api"
+	auth "github.com/hashicorp/vault/api/auth/kubernetes"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -30,7 +33,8 @@ var mongo_host = os.Getenv("MONGO_HOST")
 var mongo_port = os.Getenv("MONGO_PORT")
 var mongo_user = os.Getenv("MONGO_USER")
 var mongo_password = os.Getenv("MONGO_PASSWORD")
-var mongoUri = "mongodb://" + mongo_user + ":" + mongo_password + "@" + mongo_host + ":" + mongo_port
+var vault_addr = os.Getenv("VAULT_ADDR")
+var jwt_path = os.Getenv("JWT_PATH")
 var mongo_db = "test"
 var mongo_collection = "playlists"
 
@@ -58,6 +62,50 @@ func main() {
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
 
+	if len(mongo_user) == 0 && len(mongo_password) == 0 {
+		config := vault.DefaultConfig() // modify for more granular configuration
+		config.Address = vault_addr
+		client, err := vault.NewClient(config)
+		if err != nil {
+			panic(fmt.Errorf("unable to initialize Vault client: %w", err))
+		}
+
+		k8sAuth, err := auth.NewKubernetesAuth(
+			"mongodb",
+			auth.WithServiceAccountTokenPath(jwt_path),
+		)
+		if err != nil {
+			panic(fmt.Errorf("unable to initialize Kubernetes auth method: %w", err))
+		}
+
+		authInfo, err := client.Auth().Login(ctx, k8sAuth)
+		if err != nil {
+			panic(fmt.Errorf("unable to log in with Kubernetes auth: %w", err))
+		}
+		if authInfo == nil {
+			panic(fmt.Errorf("no auth info was returned after login"))
+		}
+
+		// get secret from Vault, from the default mount path for KV v2 in dev mode, "secret"
+		secret, err := client.KVv2("secret").Get(context.Background(), "mongodb/config")
+		if err != nil {
+			panic(fmt.Errorf("unable to read secret: %w", err))
+		}
+
+		// data map can contain more than one key-value pair,
+		// in this case we're just grabbing one of them
+		username, ok := secret.Data["username"].(string)
+		if !ok {
+			panic(fmt.Sprintf("value type assertion failed: %T %#v", secret.Data["username"], secret.Data["username"]))
+		}
+		password, ok := secret.Data["password"].(string)
+		if !ok {
+			panic(fmt.Sprintf("value type assertion failed: %T %#v", secret.Data["password"], secret.Data["password"]))
+		}
+
+		mongo_user = strings.Trim(username, " ")
+		mongo_password = strings.Trim(password, " ")
+	}
 	router := httprouter.New()
 
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -146,7 +194,7 @@ func getPlaylists(ctx context.Context) (playlists []playlist) {
 	span, _ := opentracing.StartSpanFromContext(ctx, "playlists-api: mongo-get")
 	defer span.Finish()
 
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+mongo_user+":"+mongo_password+"@"+mongo_host+":"+mongo_port))
 	if err != nil {
 		panic(err)
 	}

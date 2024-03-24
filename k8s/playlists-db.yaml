@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: playlists-db
-  namespace: tracing
+  # namespace: tracing
   labels:
     app: playlists-db
 spec:
@@ -27,16 +27,8 @@ spec:
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               value: root
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mongo-secret
-              #     key: user
             - name: MONGO_INITDB_ROOT_PASSWORD
               value: password
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mongo-secret
-              #     key: password
             - name: MONGO_INITDB_DATABASE
               value: test
           volumeMounts:
@@ -51,7 +43,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: playlists-db
-  namespace: tracing
+  # namespace: tracing
   labels:
     app: playlists-db
 spec:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: playlists-db
-  namespace: tracing
+  # namespace: tracing
 data:
   init-playlists.js: |
     db = connect("localhost:27017", "root", "password");

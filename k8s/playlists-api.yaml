@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: playlists-api
-  namespace: tracing
+  # namespace: tracing
   labels:
     app: playlists-api
 spec:
@@ -37,18 +37,10 @@ spec:
               value: "playlists-db"
             - name: "MONGO_PORT"
               value: "27017"
-            - name: "MONGO_USER"
-              value: root
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mongo-secret
-              #     key: user
-            - name: "MONGO_PASSWORD"
-              value: password
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mongo-secret
-              #     key: password
+            - name: VAULT_ADDR
+              value: "http://vault:8200"
+            - name: JWT_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: "JAEGER_HOST_PORT"
               value: "jaeger-instance-agent:6831"
 ---
@@ -56,7 +48,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: playlists-api
-  namespace: tracing
+  # namespace: tracing
   labels:
     app: playlists-api
 spec:
