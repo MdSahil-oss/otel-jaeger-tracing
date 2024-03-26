@@ -18,7 +18,7 @@ simple-test:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       changes:
-        - application-go/**
+        - applications-go/**
   image: docker:25.0.4
   services:
     - docker:25.0.4-dind
@@ -32,7 +32,7 @@ prepare-image:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: on_success
       changes:
-        - application-go/**
+        - applications-go/**
   image: docker:25.0.4
   services:
     - docker:25.0.4-dind
@@ -40,9 +40,9 @@ prepare-image:
     - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
   script:
     - echo "Building images..."
-    - docker build --pull -t $PLAYLISTS_API_IMAGE ./application-go/playlists-api
-    - docker build --pull -t $VIDEOS_API_IMAGE ./application-go/playlists-api
-    - docker build --pull -t $VIDEOS_WEB_IMAGE ./application-go/playlists-api
+    - docker build --pull -t $PLAYLISTS_API_IMAGE ./applications-go/playlists-api
+    - docker build --pull -t $VIDEOS_API_IMAGE ./applications-go/videos-api
+    - docker build --pull -t $VIDEOS_WEB_IMAGE ./applications-go/videos-web
     - echo "Images have been built"
     - echo "Now, Pushing images..."
     - docker push $PLAYLISTS_API_IMAGE
