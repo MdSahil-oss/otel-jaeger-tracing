@@ -26,6 +26,6 @@ resource "helm_release" "gitlab-agent" {
   }
   set_sensitive {
     name  = "config.token"
-    value = file("../secrets/agent-token.txt")
+    value = file("../../secrets/agent-token.txt")
   }
 }

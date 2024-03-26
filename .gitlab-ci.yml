@@ -1,0 +1,78 @@
+variables:
+  IMAGE_NAME: $DOCKERHUB_USERNAME/jaeger-tracing
+  PLAYLISTS_API_IMAGE: $IMAGE_NAME:playlists-api-1.0.2
+  VIDEOS_API_IMAGE: $IMAGE_NAME:videos-api-1.0.2
+  VIDEOS_WEB_IMAGE: $IMAGE_NAME:videos-api-1.0.0
+
+stages:
+  - test
+  - prepare
+  - deploy
+
+workflow:
+  auto_cancel:
+    on_job_failure: all
+
+simple-test:
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - application-go/**
+  image: docker:25.0.4
+  services:
+    - docker:25.0.4-dind
+  script:
+    - docker pull $PLAYLISTS_API_IMAGE && echo "Image $PLAYLISTS_API_IMAGE already exist, Please upgrade image version in .gitlab-ci.yml" && exit 1 || echo "Successful! Image $PLAYLISTS_API_IMAGE can be created"
+    - docker pull $VIDEOS_API_IMAGE && echo "Image $VIDEOS_API_IMAGE already exist, Please upgrade image version in .gitlab-ci.yml" && exit 1 || echo "Successful! Image $VIDEOS_API_IMAGE can be created"
+
+prepare-image:
+  stage: prepare
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
+      changes:
+        - application-go/**
+  image: docker:25.0.4
+  services:
+    - docker:25.0.4-dind
+  before_script:
+    - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+  script:
+    - echo "Building images..."
+    - docker build --pull -t $PLAYLISTS_API_IMAGE ./application-go/playlists-api
+    - docker build --pull -t $VIDEOS_API_IMAGE ./application-go/playlists-api
+    - docker build --pull -t $VIDEOS_WEB_IMAGE ./application-go/playlists-api
+    - echo "Images have been built"
+    - echo "Now, Pushing images..."
+    - docker push $PLAYLISTS_API_IMAGE
+    - docker push $VIDEOS_API_IMAGE
+    - docker push $VIDEOS_WEB_IMAGE
+    - echo "Pushed images"
+  after_script:
+    - echo "Pushed all the images successfully!"
+
+deploy:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
+      changes:
+        - application-go/**
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl config get-contexts
+    - kubectl config use-context MdSahil-oss/otel-jaeger-tracing:otel-jaeger-tracing
+    - kubectl get ns tracing || kubectl create ns tracing
+    - kubectl get configmap -n tracing playlists-db || kubectl apply -f k8s/playlists-db-config.yaml
+    - kubectl get configmap -n tracing videos-db || kubectl apply -f k8s/videos-db-config.yaml
+    - kubectl get deployment -n tracing playlists-api || kubectl apply -f k8s/playlists-api.yaml # If deployment doesn't exist in cluster then creates one.
+    - kubectl get deployment -n tracing playlists-db || kubectl apply -f k8s/playlists-db.yaml
+    - kubectl get deployment -n tracing videos-api || kubectl apply -f k8s/videos-api.yaml
+    - kubectl get deployment -n tracing videos-db || kubectl apply -f k8s/videos-db.yaml
+    - kubectl get deployment -n tracing videos-web || kubectl apply -f k8s/videos-web.yaml
+    - kubectl set image -n tracing deployments/playlists-api playlists-api=$PLAYLISTS_API_IMAGE # This command roll update all the pods in k8s cluster to achieve zero downtime.
+    - kubectl set image -n tracing deployments/videos-api videos-api=$VIDEOS_API_IMAGE
+    - kubectl set image -n tracing deployments/videos-web videos-db=$VIDEOS_WEB_IMAGE
