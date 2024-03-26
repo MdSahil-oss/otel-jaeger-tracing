@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: videos-db
-  # namespace: tracing
+  namespace: tracing
 data:
   init-videos.js: |
     db = connect("localhost:27017", "root", "password");

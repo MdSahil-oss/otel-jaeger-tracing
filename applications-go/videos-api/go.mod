@@ -6,6 +6,8 @@ toolchain go1.21.2
 
 require (
 	github.com/hashicorp/vault-client-go v0.4.3
+	github.com/hashicorp/vault/api v1.12.2
+	github.com/hashicorp/vault/api/auth/kubernetes v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/opentracing/opentracing-go v1.1.1-0.20190913142402-a7454ce5950e
 	github.com/sirupsen/logrus v1.9.3
@@ -38,8 +40,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/vault/api v1.12.2 // indirect
-	github.com/hashicorp/vault/api/auth/kubernetes v0.6.0 // indirect
 	github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect

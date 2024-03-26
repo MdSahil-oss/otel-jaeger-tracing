@@ -11,7 +11,7 @@ services:
       - tracing
   playlists-api:
     container_name: playlists-api
-    image: mdsahiloss/jaeger-tracing:playlists-api-1.0.0
+    image: mdsahiloss/jaeger-tracing:playlists-api-1.0.1
     build:
       context: ./applications-go/playlists-api
     environment:
@@ -41,7 +41,7 @@ services:
       - tracing
   videos-api:
     container_name: videos-api
-    image: mdsahiloss/jaeger-tracing:videos-api-1.0.0
+    image: mdsahiloss/jaeger-tracing:videos-api-1.0.1
     build:
       context: ./applications-go/videos-api
     environment:

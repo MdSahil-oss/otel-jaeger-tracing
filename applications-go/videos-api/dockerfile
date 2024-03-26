@@ -7,7 +7,11 @@ COPY go.sum /src/
 COPY go.mod /src/
 RUN go mod download
 
-COPY app.go /src
+COPY main.go /src
+COPY config.go /src
+COPY http.go /src
+COPY jaeger.go /src
+COPY vault.go /src
 
 RUN go build -o app
 
