@@ -1,0 +1,49 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: playlists-api
+  namespace: tracing
+spec:
+  gateways:
+    - playlist-gateway
+  hosts:
+    - "*"
+  http:
+    - match:
+        - uri:
+            exact: /
+      route:
+        - destination:
+            host: playlists-api
+            port:
+              number: 80
+    - match:
+        - uri:
+            exact: "/jM36M39MA3I"
+      fault:
+        delay:
+          fixedDelay: 5s
+          percentage:
+            value: 100
+      route:
+        - destination:
+            host: videos-api
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: VirtualService
+# metadata:
+#   name: videos-api
+#   namespace: tracing
+# spec:
+#   hosts:
+#     - "videos-api"
+#   http:
+#     - match:
+#         - uri:
+#             exact: "/jM36M39MA3I"
+#       fault:
+#         delay:
+#           fixedDelay: "5s"
+#       route:
+#         - destination:
+#             host: videos-api
