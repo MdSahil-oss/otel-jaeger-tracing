@@ -29,7 +29,7 @@ simple-test:
 prepare-image:
   stage: prepare
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_COMMIT_BRANCH == 'master'
       when: on_success
       changes:
         - applications-go/**
@@ -55,7 +55,7 @@ prepare-image:
 deploy:
   stage: deploy
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_COMMIT_BRANCH == 'master'
       when: on_success
       changes:
         - application-go/**
@@ -75,4 +75,4 @@ deploy:
     - kubectl get deployment -n tracing videos-web || kubectl apply -f k8s/videos-web.yaml
     - kubectl set image -n tracing deployments/playlists-api playlists-api=$PLAYLISTS_API_IMAGE # This command roll update all the pods in k8s cluster to achieve zero downtime.
     - kubectl set image -n tracing deployments/videos-api videos-api=$VIDEOS_API_IMAGE
-    - kubectl set image -n tracing deployments/videos-web videos-db=$VIDEOS_WEB_IMAGE
+    - kubectl set image -n tracing deployments/videos-web videos-web=$VIDEOS_WEB_IMAGE
