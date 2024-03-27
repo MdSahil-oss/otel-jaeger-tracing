@@ -32,6 +32,10 @@ Once application gets deployed inside K8s cluster then followings happen on acce
 - And fetches data from the MongoDB.
 - And send tracing data to Jaeger agent running in the same namespace of K8s cluster
 
+### Proof of project 
+
+![working-video](tracing-working-video.mp4)
+
 ## Microservices
 
 Following explaining about each microservice which is being used in this application:
