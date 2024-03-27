@@ -1,8 +1,8 @@
 variables:
   IMAGE_NAME: $DOCKERHUB_USERNAME/jaeger-tracing
-  PLAYLISTS_API_IMAGE: $IMAGE_NAME:playlists-api-1.0.2
-  VIDEOS_API_IMAGE: $IMAGE_NAME:videos-api-1.0.2
-  VIDEOS_WEB_IMAGE: $IMAGE_NAME:videos-api-1.0.0
+  PLAYLISTS_API_IMAGE: $IMAGE_NAME:playlists-api-1.0.3
+  VIDEOS_API_IMAGE: $IMAGE_NAME:videos-api-1.0.3
+  VIDEOS_WEB_IMAGE: $IMAGE_NAME:videos-api-1.0.1
 
 stages:
   - test
