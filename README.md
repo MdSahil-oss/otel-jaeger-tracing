@@ -10,11 +10,13 @@ The main pupose of this project is to learn Otel instrumentation in an applicati
 ### Technologies (Used in this project)
 
 - Aws EKS (Elastic Kubernetes Service).
-- Terraform
-- Jaeger
-- Otel
-- Golang
-- Docker
+- Terraform (Infrastructure As Code)
+- Jaeger (Traces Backend)
+- Open Telemetry (Used to instrument micro-services to emit traces)
+- Hashicorp Vault (Secret Manager)
+- Istio (Service Mesh)
+- Golang (All micro-services)
+- Docker (Container Tech)
 - Gitlab CI/CD
 
 ### Pipeline Flow
