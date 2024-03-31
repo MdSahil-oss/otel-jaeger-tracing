@@ -20,7 +20,7 @@ func setHttpRequest() {
 
 	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
 	if err != nil {
-		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
+		log.Panicln("ERROR: cannot init Jaeger:", err)
 	}
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
@@ -53,7 +53,7 @@ func setHttpRequest() {
 
 				req, err := http.NewRequest("GET", "http://videos-api:10010/"+playlists[pi].Videos[vi].Id, nil)
 				if err != nil {
-					panic(err)
+					log.Panicln(err)
 				}
 
 				span.Tracer().Inject(
@@ -75,13 +75,13 @@ func setHttpRequest() {
 				video, err := ioutil.ReadAll(videoResp.Body)
 
 				if err != nil {
-					panic(err)
+					log.Panicln(err)
 				}
 
 				err = json.Unmarshal(video, &v)
 
 				if err != nil {
-					panic(err)
+					log.Panicln(err)
 				}
 
 				vs = append(vs, v)
@@ -93,7 +93,7 @@ func setHttpRequest() {
 
 		playlistsBytes, err := json.Marshal(playlists)
 		if err != nil {
-			panic(err)
+			log.Panicln(err)
 		}
 
 		reader := bytes.NewReader(playlistsBytes)

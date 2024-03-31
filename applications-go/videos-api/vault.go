@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	vault "github.com/hashicorp/vault/api"
 	auth "github.com/hashicorp/vault/api/auth/kubernetes"
+	log "github.com/sirupsen/logrus"
 )
 
 func fetchSecretsFromVault() {
@@ -15,7 +15,7 @@ func fetchSecretsFromVault() {
 		config.Address = vault_addr
 		client, err := vault.NewClient(config)
 		if err != nil {
-			panic(fmt.Errorf("unable to initialize Vault client: %w", err))
+			log.Panicln("unable to initialize Vault client:", err)
 		}
 
 		k8sAuth, err := auth.NewKubernetesAuth(
@@ -23,32 +23,32 @@ func fetchSecretsFromVault() {
 			auth.WithServiceAccountTokenPath(jwt_path),
 		)
 		if err != nil {
-			panic(fmt.Errorf("unable to initialize Kubernetes auth method: %w", err))
+			log.Panicln("unable to initialize Kubernetes auth method:", err)
 		}
 
 		authInfo, err := client.Auth().Login(ctx, k8sAuth)
 		if err != nil {
-			panic(fmt.Errorf("unable to log in with Kubernetes auth: %w", err))
+			log.Panicln("unable to log in with Kubernetes auth:", err)
 		}
 		if authInfo == nil {
-			panic(fmt.Errorf("no auth info was returned after login"))
+			log.Panicln("no auth info was returned after login")
 		}
 
 		// get secret from Vault, from the default mount path for KV v2 in dev mode, "secret"
 		secret, err := client.KVv2("secret").Get(context.Background(), "mongodb/config")
 		if err != nil {
-			panic(fmt.Errorf("unable to read secret: %w", err))
+			log.Panicln("unable to read secret:", err)
 		}
 
 		// data map can contain more than one key-value pair,
 		// in this case we're just grabbing one of them
 		username, ok := secret.Data["username"].(string)
 		if !ok {
-			panic(fmt.Sprintf("value type assertion failed: %T %#v", secret.Data["username"], secret.Data["username"]))
+			log.Panicln("value type assertion failed:", secret.Data["username"])
 		}
 		password, ok := secret.Data["password"].(string)
 		if !ok {
-			panic(fmt.Sprintf("value type assertion failed: %T %#v", secret.Data["password"], secret.Data["password"]))
+			log.Panicln("value type assertion failed:", secret.Data["password"])
 		}
 
 		mongo_user = strings.Trim(username, " ")

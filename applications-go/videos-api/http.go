@@ -25,7 +25,7 @@ func setHttpRequest() {
 
 	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
 	if err != nil {
-		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
+		log.Panicln("ERROR: cannot init Jaeger: ", err)
 	}
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
@@ -44,7 +44,7 @@ func setHttpRequest() {
 
 		if flaky == "true" {
 			if rand.Intn(90) < 30 {
-				panic("flaky error occurred ")
+				log.Panicln("flaky error occurred ")
 			}
 		}
 
@@ -57,7 +57,7 @@ func setHttpRequest() {
 
 		jsonData, err := json.Marshal(videos[0])
 		if err != nil {
-			panic(err)
+			log.Panicln(err)
 		}
 
 		cors(w)
@@ -75,12 +75,12 @@ func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Pa
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+mongo_user+":"+mongo_password+"@"+mongo_host+":"+mongo_port))
 	if err != nil {
-		panic(err)
+		log.Panicln(err)
 	}
 
 	defer func() {
 		if err := mongoClient.Disconnect(ctx); err != nil {
-			panic(err)
+			log.Panicln(err)
 		}
 	}()
 
@@ -94,11 +94,11 @@ func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Pa
 		)
 		return
 	} else if err != nil {
-		panic(err)
+		log.Panicln(err)
 	}
 
 	if err = cursor.All(ctx, &videos); err != nil {
-		panic(err)
+		log.Panicln(err)
 	} else {
 		span.Tracer().Inject(
 			span.Context(),

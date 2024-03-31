@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 )
 
@@ -24,5 +24,5 @@ var mongo_collection = "playlists"
 func main() {
 	fetchSecretsFromVault()
 	setHttpRequest()
-	fmt.Println("Running...")
+	log.Println("Running...")
 }

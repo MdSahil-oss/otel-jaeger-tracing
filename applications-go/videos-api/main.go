@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 //TODO : https://opentracing.io/guides/golang/quick-start/
@@ -29,5 +30,5 @@ var ctx = context.Background()
 func main() {
 	fetchSecretsFromVault()
 	setHttpRequest()
-	fmt.Println("Running...")
+	log.Println("Running...")
 }
