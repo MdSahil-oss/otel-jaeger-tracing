@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"log"
 )
 
 //TODO : https://opentracing.io/guides/golang/quick-start/
@@ -24,11 +24,13 @@ var mongo_user = os.Getenv("MONGO_USER")
 var mongo_password = os.Getenv("MONGO_PASSWORD")
 var mongo_db = "test"
 var mongo_collection = "videos"
+var infoLogger, errLogger *log.Logger
 
 var ctx = context.Background()
 
 func main() {
+	NewLogger()
 	fetchSecretsFromVault()
 	setHttpRequest()
-	log.Println("Running...")
+	infoLogger.Println("Running...")
 }

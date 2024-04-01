@@ -20,9 +20,11 @@ var vault_addr = os.Getenv("VAULT_ADDR")
 var jwt_path = os.Getenv("JWT_PATH")
 var mongo_db = "test"
 var mongo_collection = "playlists"
+var infoLogger, errLogger *log.Logger
 
 func main() {
+	NewLogger()
 	fetchSecretsFromVault()
 	setHttpRequest()
-	log.Println("Running...")
+	infoLogger.Println("Running...")
 }

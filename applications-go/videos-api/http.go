@@ -12,7 +12,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
-	log "github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,19 +20,22 @@ import (
 )
 
 func setHttpRequest() {
+	infoLogger.Println("Setting for http request")
+	infoLogger.Println("Configuring Jaeger")
 	cfg := newJaegerConfig()
 
 	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
 	if err != nil {
-		log.Panicln("ERROR: cannot init Jaeger: ", err)
+		errLogger.Panicln("ERROR: cannot init Jaeger: ", err)
 	}
+	infoLogger.Println("Configured Jaeger")
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
 
 	router := httprouter.New()
 
 	router.GET("/:id", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
+		infoLogger.Println("Sent GET request at '/id'")
 		spanCtx, _ := tracer.Extract(
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(r.Header),
@@ -44,7 +46,7 @@ func setHttpRequest() {
 
 		if flaky == "true" {
 			if rand.Intn(90) < 30 {
-				log.Panicln("flaky error occurred ")
+				errLogger.Panicln("flaky error occurred ")
 			}
 		}
 
@@ -57,30 +59,30 @@ func setHttpRequest() {
 
 		jsonData, err := json.Marshal(videos[0])
 		if err != nil {
-			log.Panicln(err)
+			errLogger.Panicln(err)
 		}
 
 		cors(w)
 		fmt.Fprintf(w, "%s", string(jsonData))
 	})
 
-	log.Fatal(http.ListenAndServe(":10010", router))
+	errLogger.Fatal(http.ListenAndServe(":10010", router))
 }
 
 func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Params, ctx context.Context) (videos []video) {
-
+	infoLogger.Println("Fetching data from database")
 	span, _ := opentracing.StartSpanFromContext(ctx, "videos-api: mongo-get")
 	defer span.Finish()
 	id := p.ByName("id")
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+mongo_user+":"+mongo_password+"@"+mongo_host+":"+mongo_port))
 	if err != nil {
-		log.Panicln(err)
+		errLogger.Panicln(err)
 	}
 
 	defer func() {
 		if err := mongoClient.Disconnect(ctx); err != nil {
-			log.Panicln(err)
+			errLogger.Panicln(err)
 		}
 	}()
 
@@ -94,11 +96,11 @@ func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Pa
 		)
 		return
 	} else if err != nil {
-		log.Panicln(err)
+		errLogger.Panicln(err)
 	}
 
 	if err = cursor.All(ctx, &videos); err != nil {
-		log.Panicln(err)
+		errLogger.Panicln(err)
 	} else {
 		span.Tracer().Inject(
 			span.Context(),
@@ -106,6 +108,6 @@ func getVideo(writer http.ResponseWriter, request *http.Request, p httprouter.Pa
 			opentracing.HTTPHeadersCarrier(request.Header),
 		)
 	}
-
+	infoLogger.Println("Fetched data from database")
 	return videos
 }
