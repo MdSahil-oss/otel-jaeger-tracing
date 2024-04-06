@@ -6,17 +6,18 @@ import (
 )
 
 func NewLogger() {
-	var infoFilename string = "/tmp/playlists-api-info.log"
-	infoFile, err := os.Open(infoFilename)
+	var infoFilename string = "/app/playlists-api-info.log"
+
+	infoFile, err := os.Create(infoFilename)
 	if err != nil {
-		log.Fatal("Couldn't open", infoFile)
+		log.Fatal("Couldn't create:", err)
 	}
 	infoLogger = log.New(infoFile, "INFO:", log.Lshortfile)
 
-	var errFilename string = "/tmp/playlists-api-err.log"
-	errFile, err := os.Open(errFilename)
+	var errFilename string = "/app/playlists-api-err.log"
+	errFile, err := os.Create(errFilename)
 	if err != nil {
-		log.Fatal("Couldn't open", errFile)
+		log.Fatal("Couldn't create:", err)
 	}
 	errLogger = log.New(errFile, "ERROR:", log.Lshortfile)
 }

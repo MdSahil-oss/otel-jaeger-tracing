@@ -8,6 +8,7 @@ COPY go.mod /src/
 RUN go mod download
 
 COPY main.go /src
+COPY log.go /src
 COPY config.go /src
 COPY http.go /src
 COPY jaeger.go /src
