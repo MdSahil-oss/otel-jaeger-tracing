@@ -13,7 +13,8 @@ spec:
       inputs:
         - type: container
           paths:
-            - /var/log/containers/*.log
+            - /var/log/containers/playlists-api-*.log
+            - /var/log/containers/videos-api-*.log
       # Below written block is commented out because logstash is having an `insufficient space` error in starting.
       # output:
       #   logstash:

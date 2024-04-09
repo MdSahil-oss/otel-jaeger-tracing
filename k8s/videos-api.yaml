@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: videos-api
-          image: mdsahiloss/jaeger-tracing:videos-api-1.0.0
+          image: mdsahiloss/jaeger-tracing:videos-api-log-1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 10010
@@ -61,4 +61,3 @@ spec:
       port: 10010
       targetPort: 10010
 ---
-
